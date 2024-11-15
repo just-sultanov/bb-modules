@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+bb --config "$PROJECT_ROOT_PATH/bb.edn" "$@"

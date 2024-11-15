@@ -1,0 +1,69 @@
+{:tasks
+ {:requires ([clojure.string :as str])
+
+  :init (do
+          (def root-path (or (System/getenv "PROJECT_ROOT_PATH") "."))
+
+          (def modules
+            {"module1" {:path (format "%s/modules/module1" root-path)
+                        :description "Module 1"}
+             "module2" {:path (format "%s/modules/module2" root-path)
+                        :description "Module 2"}})
+
+          (defn extract-tasks
+            [module]
+            (->> "bb tasks"
+                 (shell {:dir (get-in modules [module :path]), :out :string})
+                 (:out)
+                 (str/trim)
+                 (str/split-lines)
+                 (drop 2)))
+
+          (defn get-longest
+            [coll]
+            (->> coll
+                 (map count)
+                 (reduce max 0)))
+
+          (defn print-tasks
+            [module]
+            (let [tasks (extract-tasks module)]
+              (println (format "\n%s" module))
+              (if-not (seq tasks)
+                (println "  No tasks found")
+                (doseq [task tasks]
+                  (println (format "  %s %s" module task))))))
+
+          (defn exec-task
+            [module]
+            (shell {:dir (get-in modules [module :path])} (apply str "bb " *command-line-args*))))
+
+  help {:override-builtin true
+        :doc "Show help"
+        :task (do
+                (println "The following modules and subtasks are available:")
+                (->> modules
+                     (keys)
+                     (sort)
+                     (run! print-tasks)))}
+
+  modules {:doc "List of modules"
+           :task (do
+                   (println "The following modules are available:\n")
+                   (let [module-names (->> modules
+                                           (keys)
+                                           (sort))
+                         longest (get-longest module-names)
+                         fmt (str "%1$-" longest "s")]
+                     (doseq [module module-names]
+                       (println (format "%s  %s" (format fmt module) (get-in modules [module :description]))))))}
+
+  module1 {:doc "Tasks of the module 1"
+           :task (if-not (seq *command-line-args*)
+                   (print-tasks "module1")
+                   (exec-task "module1"))}
+
+  module2 {:doc "Tasks of the module 2"
+           :task (if-not (seq *command-line-args*)
+                   (print-tasks "module2")
+                   (exec-task "module2"))}}}

@@ -1,0 +1,5 @@
+{:tasks
+ {task1 {:doc "some task 1"
+         :task (println "Hello, world!")}
+  task2 {:doc "some task 2"}
+  too-long-task-name {}}}
